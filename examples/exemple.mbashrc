@@ -1,0 +1,8 @@
+# Fichier de configuration pour mbash
+set PATH $PATH:/usr/local/bin:/usr/bin:/bin
+set EDITOR nano
+set LANG fr_FR.UTF-8
+
+# Message de bienvenue
+echo "Bienvenue dans mbash $USER !"
+echo "La date du jour est $(date '+%d/%m/%Y %H:%M')"

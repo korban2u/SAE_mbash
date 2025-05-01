@@ -1,249 +1,178 @@
-# Rapport de Projet: `mbash`
+# 📁 mbash – Mini Shell
 
-- Ryan Korban Vivein Herman S3-C
+<div align="center">
 
-## 1. Partie 1: Création de `mbash`
+![mbash Banner](screenshot/mbash.png)
 
-### 1.1 Objectif du projet
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE)
+[![Version](https://img.shields.io/badge/Version-1.0-brightgreen.svg)]()
+[![Build Status](https://img.shields.io/badge/Build-Passing-success)]()
+[![Code Quality](https://img.shields.io/badge/Code-A+-orange.svg)]()
 
-Le but de cette partie était de créer une version simplifiée de Bash, appelée `mbash`. :
+</div>
 
-### 1.2 Fonctionnalités de `mbash`
+<p align="center">
+  <b>Un shell Unix léger avec une belle interface utilisateur </b>
+</p>
 
-Les fonctionnalités principales que nous avons implémentées dans `mbash` comprennent :
+---
 
-1. **Commande `pwd`**: Affiche le répertoire courant.
+## 🌟 Caractéristiques
 
-   ```bash
-   mbash> pwd
-   /home/utilisateur
-   ```
+- **🔍 Complétion intelligente** des commandes et chemins avec affichage visuel
+- **📚 Historique des commandes** bien formaté et facile à naviguer
+- **🔄 Exécution en arrière-plan** avec le symbole `&`
+- **📁 Navigation intuitive** dans le système de fichiers
+- **💻 Mode d'édition avancé** avec support des touches fléchées et raccourcis clavier
+- **📝 Variables d'environnement** accessibles avec `$`
+- **🔧 Configuration personnalisable** via fichier `.mbashrc`
+- **🔄 Support des commandes multiples** séparées par `;`
 
-2. **Commande `cd`**: Permet de naviguer dans les répertoires.
+---
 
-   - Si le répertoire est incorrect :
-     ```bash
-     mbash> cd /chemin/incorrect
-     Erreur cd : impossible d'accéder au répertoire '/chemin/incorrect' (No such file or directory).
-     ```
-   - Si le répertoire est correct :
-     ```bash
-     mbash> cd /home
-     mbash> pwd
-     /home
-     ```
+## 🚀 Installation
 
-3. **Variables d'environnement**:
+### Prérequis
 
-   ```bash
-   mbash> echo $HOME
-   /home/utilisateur
+- GCC ou tout autre compilateur C standard
+- Système Unix/Linux compatible avec les bibliothèques standard
+- Émulation de terminal avec support UTF-8 et ANSI color
 
-    mbash> set MON_VAR test_value
-    mbash> echo $MON_VAR
-    test_value
-   ```
-
-4. **Exécution de commandes externes**: Utilisation de commandes système comme `ls`, `cat`, etc. (tout les paramètres sont pris en charge grace à `execve()` qui prend en argument un tableau d'arguments). :
-
-   ```bash
-   mbash> ls
-   Documents  Téléchargements  Musique  etc.
-
-   mbash> cat fichier.txt
-    Contenu du fichier.txt
-
-    mbash> ls -l
-    total 4
-    -rw-r--r-- 1 utilisateur utilisateur 0 Sep  1 12:00 fichier1.txt
-    -rw-r--r-- 1 utilisateur utilisateur 0 Sep  1 12:00 fichier2.txt
-    drwxr-xr-x 1 utilisateur utilisateur 0 Sep  1 12:00 dossierA
-    drwxr-xr-x 1 utilisateur utilisateur 0 Sep  1 12:00 dossierB
-   ```
-
-5. **Gestion de toutes les autres commandes**: Gestion de toutes les autres commandes tel que ps mkdir touch nano etc... (tout marche) en utilisant `execve()`.
-
-6. **Gestion des processus en arrière-plan**: Exécution de commandes comme `sleep` en arrière-plan :
-
-   ```bash
-   mbash> sleep 10 &
-   [PID 1234] sleep
-   ```
-
-7. **Gestion des processus enfants**: Nous avons utilisé `sigaction` pour gérer la réception des signaux `SIGCHLD` lorsque les processus enfants terminent leur exécution pour éviter des processus zombie.
-
-## 2. Partie 2: Serveur de Paquets Debian pour `mbash`
-
-### 2.1 Installation des outils nécessaires sur le serveur
-
-Sur le serveur, il faut d'abord installer les outils nécessaires pour créer et gérer un dépôt Debian.
+### Compilation depuis les sources
 
 ```bash
-sudo apt update
-sudo apt install -y dpkg-dev reprepro dpkg-sig gnupg apache2
+# Cloner le dépôt
+git clone https://github.com/korban2u/SAE_mbash.git
+cd mbash
+
+# Compiler avec Make
+make
+
+# Ou compiler manuellement
+gcc -Wall -Wextra -O2 -o mbash src/mbash.c
+
+# Installation (optionnelle)
+sudo make install
 ```
 
-### 2.2 Configuration du dépôt avec `reprepro`
-
-Créez le répertoire de votre dépôt Debian et configurez `reprepro` pour qu'il gère ce dépôt.
-
-1. Créez les répertoires nécessaires pour le dépôt :
-
-   ```bash
-   mkdir -p ~/debian_repo/conf
-   cd ~/debian_repo
-   ```
-
-2. Créez le fichier de configuration `distributions` pour `reprepro` :
-   ```bash
-   cat <<EOF > conf/distributions
-   Origin: RyanVivien
-   Label: CustomRepo
-   Suite: stable
-   Codename: stable
-   Architectures: amd64
-   Components: main
-   Description: Mini bash pour une sae
-   SignWith: yes
-   EOF
-   ```
-
-### 2.3 Génération de la clé GPG
-
-Générez une clé GPG pour signer les paquets.
+### Tester l'installation
 
 ```bash
-gpg --full-generate-key
-```
-
-Une fois la clé générée, exportez la clé publique pour le client :
-
-```bash
-gpg --armor --export ryanvivien@gmail.com> > ~/public.key
-```
-
-# Déploiement de mbash avec un serveur Debian
-
-## 2. Partie Serveur
-
-### 2.4 Création du package Debian pour mbash
-
-Nous avons créé le répertoire pour le programme mbash et le package Debian.
-
-1. Nous avons créé les répertoires nécessaires pour le package :
-
-   ```bash
-   mkdir -p ~/mbash-0.1/usr/bin
-   mkdir -p ~/mbash-0.1/DEBIAN
-   ```
-
-2. Nous avons ajouté le programme compilé dans le répertoire `~/mbash-0.1/usr/bin` (nous avons vérifié que notre programme mbash était bien compilé et placé ici).
-
-3. Nous avons créé le fichier de contrôle `DEBIAN/control` pour le package :
-
-   ```bash
-   cat <<EOF > ~/mbash-0.1/DEBIAN/control
-   Package: mbash
-   Version: 0.1
-   Section: base
-   Priority: optional
-   Architecture: amd64
-   Maintainer: VotreNom <votre-email@example.com>
-   Description: Mini programme Bash
-   EOF
-   ```
-
-4. Nous avons construit le package Debian :
-
-   ```bash
-   dpkg-deb --build ~/mbash-0.1
-   ```
-
-5. Nous avons vérifié le package :
-
-   ```bash
-   dpkg --info ~/mbash-0.1.deb
-   ```
-
-### 2.5 Ajout du package au dépôt
-
-Nous avons ajouté le package au dépôt avec la commande suivante :
-
-```bash
-reprepro -b ~/debian_repo includedeb stable ~/mbash-0.1.deb
-```
-
-### 2.6 Configuration du serveur Apache
-
-Nous avons créé un lien symbolique pour rendre le dépôt accessible via HTTP avec Apache :
-
-```bash
-sudo ln -s ~/debian_repo /var/www/html/Debian
-```
-
-Ensuite, nous avons vérifié que le dépôt était accessible dans le navigateur à l'adresse suivante :
-
-```bash
-http://localhost/debian
+./mbash
 ```
 
 ---
 
-## 3. Partie Client
+## 🔧 Utilisation
 
-### 3.1 Ajout de la clé publique
+### Commandes intégrées
 
-Sur le client, nous avons ajouté la clé publique générée sur le serveur pour authentifier les paquets :
+| Commande          | Description                          |
+| ----------------- | ------------------------------------ |
+| `cd <dir>`        | Changer de répertoire                |
+| `pwd`             | Afficher le répertoire courant       |
+| `set <VAR> <val>` | Définir une variable d'environnement |
+| `echo <texte>`    | Afficher du texte (supporte $VAR)    |
+| `history`         | Afficher l'historique des commandes  |
+| `help`            | Afficher l'aide du shell             |
+| `exit`            | Quitter mbash                        |
 
-```bash
-sudo apt-key add ~/public.key
-```
+### Raccourcis clavier
 
-### 3.2 Ajout du dépôt à la liste des sources
+| Touche     | Action                             |
+| ---------- | ---------------------------------- |
+| `Tab`      | Compléter les commandes et chemins |
+| `↑/↓`      | Naviguer dans l'historique         |
+| `←/→`      | Déplacer le curseur                |
+| `Home/End` | Aller au début/fin de ligne        |
+| `Ctrl+C`   | Interrompre la commande en cours   |
+| `Ctrl+D`   | Quitter mbash (EOF)                |
 
-Nous avons modifié le fichier `/etc/apt/sources.list` pour ajouter le dépôt que nous avons configuré sur le serveur. Nous avons remplacé `<server-ip>` par l'adresse IP du serveur :
-
-```bash
-echo "deb [arch=amd64] http://<ip du serveur ici>/debian stable main" | sudo tee -a /etc/apt/sources.list
-```
-
-### 3.3 Mise à jour de la base de données des paquets
-
-Nous avons mis à jour la base des paquets pour prendre en compte le nouveau dépôt :
-
-```bash
-sudo apt update
-```
-
-### 3.4 Installation de mbash
-
-Maintenant, nous avons installé mbash en utilisant la commande suivante :
+### Fonctionnalités avancées
 
 ```bash
-sudo apt install mbash
+# Exécution en arrière-plan
+long_command &
+
+# Variables d'environnement
+echo $HOME
+set MY_VAR valeur
+
+# Commandes multiples
+cd /tmp; ls -la; echo "Done"
+
+# Utilisation des globs
+ls *.txt
 ```
 
 ---
 
-## 4. Mise à jour du logiciel (Cycle de vie)
+## ⚙️ Configuration
 
-Si on veut publier une nouvelle version de `mbash` (par exemple, version 0.2), on suit ces étapes sur le serveur :
+mbash peut être configuré via un fichier `.mbashrc` dans votre répertoire home.
 
-1. D'abord on modifie la version dans le fichier `~/mbash-0.2/DEBIAN/control`.
-2. Puis on reconstruit le package et on l'ajoute au dépôt :
+```bash
+# Exemple de .mbashrc
+set PATH $PATH:/usr/local/bin
+set PS1 "[\u@\h \W]$ "
+set EDITOR nano
 
-   ```bash
-   dpkg-deb --build ~/mbash-0.2
-   reprepro -b ~/debian_repo includedeb stable ~/mbash-0.2.deb
-   ```
-
-3. Sur le client, il faut mettre à jour la base des paquets et les installer la nouvelle version :
-
-   ```bash
-   sudo apt update
-   sudo apt upgrade
-   ```
+# Alias personnalisés (si supportés dans votre version)
+alias ll='ls -la'
+alias c='clear'
+```
 
 ---
 
-En suivant toutes ces étapes on a réussi à mettre en place le serveur et le client pour le déploiement de `mbash` sur un réseau local.
+## 🛠️ Architecture du projet
+
+```
+mbash/
+├── LICENSE
+├── Makefile
+├── README.md
+├── docs/
+│   └── manual.md
+├── src/
+│   ├── mbash.c       # Code principal
+│   ├── buffer.h      # Gestion du buffer d'édition
+│   ├── commands.h    # Implémentation des commandes intégrées
+│   ├── completion.h  # Système de complétion
+│   ├── terminal.h    # Gestion du terminal et de l'affichage
+│   └── utils.h       # Fonctions utilitaires
+└── tests/
+    └── test_suite.c  # Tests unitaires
+```
+
+---
+
+## 🔍 Fonctionnement interne
+
+mbash est conçu selon les principes de conception Unix, avec une architecture modulaire et extensible:
+
+1. **Terminal non-canonique**: permet l'édition de ligne caractère par caractère
+2. **Buffer d'édition**: gère l'insertion, la suppression et la navigation
+3. **Analyse de commandes**: séparation des arguments et interprétation
+4. **Exécution**: fork, exec et wait pour les processus enfants
+5. **Gestion des signaux**: capture SIGCHLD, SIGINT, etc.
+6. **Interface utilisateur**: rendu avec couleurs ANSI et caractères Unicode
+
+### Diagramme de flux
+
+```
+Démarrage → Initialisation → Boucle principale → [Lire ligne → Analyser → Exécuter] → Fin
+```
+
+---
+
+## 📜 Licence
+
+Ce projet est sous licence MIT - voir le fichier [LICENSE](LICENSE) pour plus de détails.
+
+---
+
+## 🙏 Développeurs
+
+- Ryan Korban et Vivein Herman dans le cadre d'une SAE
+
+
